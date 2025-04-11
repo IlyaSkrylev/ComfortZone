@@ -52,7 +52,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> with SingleTickerProvid
   Future<void> _selectLocation(bool isStartLocation) async {
     final LatLng? result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => MapScreen()),
+      MaterialPageRoute(builder: (context) => MapScreen(googleMapController: _mapController,)),
     );
 
     if (result != null) {
@@ -75,6 +75,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> with SingleTickerProvid
       });
     }
   }
+  
   Widget _buildGoogleMap() {
     return Container(
       height: 300,
@@ -543,7 +544,8 @@ class CustomLineChart extends StatelessWidget {
 
 }
 class MapScreen extends StatelessWidget {
-  const MapScreen({super.key});
+  GoogleMapController googleMapController;
+  MapScreen({super.key, required this.googleMapController});
 
   @override
   Widget build(BuildContext context) {
@@ -562,7 +564,7 @@ class MapScreen extends StatelessWidget {
         },
         markers: Set<Marker>.from([]),
         onMapCreated: (GoogleMapController controller) {
-          // Действия при создании карты
+          googleMapController = controller;
         },
       ),
     );

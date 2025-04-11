@@ -103,7 +103,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Consumer<WeatherViewModel>(
       builder: (context, vm, _) {
-        if (!vm.isDataLoaded) return Center(child: CircularProgressIndicator());
+        if (!vm.isDataLoaded) {
+          return Container(
+            color: Color.fromARGB(255, 67, 156, 219), // Белый фон для всего контейнера
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white), // Темно-синий цвет круга
+              ),
+            ),
+          );
+        }
         if (vm.error != null) return Center(child: Text(vm.error!));
         _notifications = _weatherViewModel.stormWarning!.items;
         final List<Widget> _screens = [
@@ -310,9 +319,9 @@ class HomeScreenContent extends StatelessWidget {
                   '${weatherViewModel.weatherInfo?.tempC.toString() as String} ',
                   style: const TextStyle(fontSize: 72, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
-                Image.network('https:${weatherViewModel.weatherInfo?.conditionIcon as String}',
-                              width:  60,
-                              height: 60,),
+                weatherViewModel.weatherInfo?.conditionIcon == '//cdn.weatherapi.com/weather/64x64/night/113.png' ? Icon(Icons.brightness_3, // или Icons.brightness_3
+                  color: Colors.yellow, size: 60) : Image.network('https:${weatherViewModel.weatherInfo?.conditionIcon as String}',
+                  width: 60,),
               ],
             ),
             Text(
@@ -410,8 +419,9 @@ class HomeScreenContent extends StatelessWidget {
       children: [
         Text(time, style: const TextStyle(color: Colors.white)),
         const SizedBox(height: 4),
-        Image.network(icon,
-          width: 32,),
+        icon == 'https://cdn.weatherapi.com/weather/64x64/night/113.png' ? Icon(Icons.brightness_3, // или Icons.brightness_3
+          color: Colors.yellow) : Image.network(icon,
+                  width: 32,),
         const SizedBox(height: 4),
         Text(temp, style: const TextStyle(color: Colors.white)),
         const SizedBox(height: 4),
@@ -507,10 +517,14 @@ class HomeScreenContent extends StatelessWidget {
         itemCount: 10,
         itemBuilder: (context, index) {
           return _dayForecastRow(
-            '${convertDate(weatherViewModel.forecast?[index].date.day)}.${convertDate(weatherViewModel.forecast?[index].date.month)}',
-            'https:${weatherViewModel.forecast?[index].hour[11].conditionIcon}',
+            index == 0 
+            ? 'Сегодня' 
+            : index == 1 
+            ? 'Завтра'
+            : '${convertDate(weatherViewModel.forecast?[index].date.day)}.${convertDate(weatherViewModel.forecast?[index].date.month)}',
+            'https:${weatherViewModel.forecast?[index].hour[12].conditionIcon}',
             'https:${weatherViewModel.forecast?[index].hour[0].conditionIcon}',
-            '${weatherViewModel.forecast?[index].hour[11].tempC}',
+            '${weatherViewModel.forecast?[index].hour[12].tempC}',
             '${weatherViewModel.forecast?[index].hour[0].tempC}',
             '${weatherViewModel.forecast![index].dailyChanceOfRain > weatherViewModel.forecast![index].dailyChanceOfSnow ? weatherViewModel.forecast![index].dailyChanceOfRain : weatherViewModel.forecast![index].dailyChanceOfSnow}',
           );
@@ -530,15 +544,23 @@ class HomeScreenContent extends StatelessWidget {
 
   Widget _dayForecastRow(String day, String icon, String iconNight, String high, String low, String rain) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0,horizontal: 20.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0,horizontal: 15.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-            flex: 1,
+            flex: 2,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center, 
+              crossAxisAlignment: CrossAxisAlignment.start, 
               children: [
-                Text(day, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(
+                  day,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -552,16 +574,17 @@ class HomeScreenContent extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 1,
+            flex: 2,
             child: Column(
               children: [
-                Image.network(iconNight,
+                iconNight == 'https://cdn.weatherapi.com/weather/64x64/night/113.png' ? Icon(Icons.brightness_3, // или Icons.brightness_3
+  color: Colors.yellow) : Image.network(iconNight,
                   width: 32,),
               ],
             ),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Center(
               child: Column(
                 children: [
@@ -727,13 +750,13 @@ class HomeScreenContent extends StatelessWidget {
         Widget sheetContent;
         switch (label) {
           case 'Ветер':
-            sheetContent = const WindSheetContent();
+            sheetContent =  WindSheetContent(weatherViewModel: weatherViewModel,);
             break;
           case 'Осадки':
-            sheetContent = const PrecipitationSheetContent();
+            sheetContent = PrecipitationSheetContent(weatherViewModel: weatherViewModel,);
             break;
           case 'Влажность':
-            sheetContent = const HumiditySheetContent();
+            sheetContent = HumiditySheetContent(weatherViewModel: weatherViewModel,);
             break;
           case 'УФ-индекс':
             sheetContent = const UvIndexSheetContent();
@@ -835,7 +858,8 @@ class HomeScreenContent extends StatelessWidget {
 
 }
 class WindSheetContent extends StatelessWidget {
-  const WindSheetContent({super.key});
+  final WeatherViewModel weatherViewModel;
+  WindSheetContent({super.key, required this.weatherViewModel});
 
   @override
   Widget build(BuildContext context) {
@@ -865,21 +889,22 @@ class WindSheetContent extends StatelessWidget {
               children: [
 
                 const SizedBox(height: 6),
-                Text('Скорость ветра сейчас составляет N км/ч, направление: восток-юго-восток. Сегодня скорость ветра составит от n до n км/ч с порывами до n км/ч.',
+                Text('Скорость ветра сейчас составляет ${weatherViewModel.weatherInfo?.windKph} км/ч, направление: восток-юго-восток. Сегодня порывы ветра достигнyт до ${weatherViewModel.weatherInfo?.gustKph} км/ч. Температура воздуха с учётом ветра составит ${weatherViewModel.weatherInfo?.windchillC}°.',
                     style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 16)),
                 SizedBox(height: 15),
                 CustomLineChart(
                   points: [
-                    FlSpot(0, 5),
-                    FlSpot(3, 9),
-                    FlSpot(6, 12),
-                    FlSpot(9, 15),
-                    FlSpot(12, 17),
-                    FlSpot(15, 16),
-                    FlSpot(18, 13),
-                    FlSpot(21, 10),
+                    FlSpot(0, weatherViewModel.forecast![0].hour[0].windKph),
+                    FlSpot(3, weatherViewModel.forecast![0].hour[3].windKph),
+                    FlSpot(6, weatherViewModel.forecast![0].hour[6].windKph),
+                    FlSpot(9, weatherViewModel.forecast![0].hour[9].windKph),
+                    FlSpot(12, weatherViewModel.forecast![0].hour[12].windKph),
+                    FlSpot(15, weatherViewModel.forecast![0].hour[15].windKph),
+                    FlSpot(18, weatherViewModel.forecast![0].hour[18].windKph),
+                    FlSpot(21, weatherViewModel.forecast![0].hour[21].windKph),
+                    FlSpot(24, weatherViewModel.forecast![1].hour[0].windKph),
                   ],
                   xUnit: 'часы',
                   yUnit: '°C',
@@ -944,14 +969,19 @@ class WindSheetContent extends StatelessWidget {
               children: [
 
                 const SizedBox(height: 6),
-                Text('Максимальная скорость ветра сегодня ниже чем вчера.',
-                    style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16)),
+                weatherViewModel.forecast![0].maxwindKph < weatherViewModel.forecast![1].maxwindKph 
+                ? Text('Максимальная скорость ветра сегодня ниже чем заврта.',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16))
+                : Text('Максимальная скорость ветра сегодня выше чем заврта.',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16)),
                 const SizedBox(height: 8),
                 ComparisonBarWidget(
-                  value1: 5.4,
-                  value2: 2.2,
+                  value1: weatherViewModel.forecast![0].maxwindKph,
+                  value2: weatherViewModel.forecast![1].maxwindKph,
                   label1: 'Сегодня',
                   label2: 'Завтра',
                 ),
@@ -1247,7 +1277,8 @@ class HealthStatusSheetContent  extends StatelessWidget {
   }
 }
 class PrecipitationSheetContent extends StatelessWidget {
-  const PrecipitationSheetContent({super.key});
+  final WeatherViewModel weatherViewModel;
+  PrecipitationSheetContent({super.key, required this.weatherViewModel});
 
   @override
   Widget build(BuildContext context) {
@@ -1277,24 +1308,25 @@ class PrecipitationSheetContent extends StatelessWidget {
               children: [
 
                 const SizedBox(height: 6),
-                Text('За последние 24 часа общее количество осадков составило 0 мм. Сегодня общее количество осадков составит 0 мм. В следующий раз осадки ожидаются 4 апреля в виде снега.',
+                Text('Сегодня осадки достигнут ${weatherViewModel.forecast?[0].totalprecipMm} мм. Завтра общее количество осадков составит ${weatherViewModel.forecast?[1].totalprecipMm} мм. В ближайший час ожидается ${weatherViewModel.weatherInfo?.precipMm}.',
                     style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 16)),
                 SizedBox(height: 15),
                 CustomLineChart(
                   points: [
-                    FlSpot(0, 5),
-                    FlSpot(3, 9),
-                    FlSpot(6, 12),
-                    FlSpot(9, 15),
-                    FlSpot(12, 17),
-                    FlSpot(15, 16),
-                    FlSpot(18, 13),
-                    FlSpot(21, 10),
+                    FlSpot(0, weatherViewModel.forecast![0].hour[0].precipMm),
+                    FlSpot(3, weatherViewModel.forecast![0].hour[3].precipMm),
+                    FlSpot(6, weatherViewModel.forecast![0].hour[6].precipMm),
+                    FlSpot(9, weatherViewModel.forecast![0].hour[9].precipMm),
+                    FlSpot(12, weatherViewModel.forecast![0].hour[12].precipMm),
+                    FlSpot(15, weatherViewModel.forecast![0].hour[15].precipMm),
+                    FlSpot(18, weatherViewModel.forecast![0].hour[18].precipMm),
+                    FlSpot(21, weatherViewModel.forecast![0].hour[21].precipMm),
+                    FlSpot(24, weatherViewModel.forecast![1].hour[0].precipMm)
                   ],
                   xUnit: 'часы',
-                  yUnit: '°C',
+                  yUnit: 'мм',
                 ),
               ],
             ),
@@ -1324,18 +1356,18 @@ class PrecipitationSheetContent extends StatelessWidget {
               children: [
 
                 const SizedBox(height: 6),
-                Text('За последние сутки выпало 0 мм.',
+                Text('Сегдня выпадет ${weatherViewModel.forecast?[0].totalprecipMm} мм.',
                     style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 16)),
-                Text('За следующие сутки выпадет 0 мм.',
+                Text('За следующие сутки выпадет ${weatherViewModel.forecast?[1].totalprecipMm} мм.',
                     style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 16)),
                 const SizedBox(height: 8),
                 ComparisonBarWidget(
-                  value1: 5.4,
-                  value2: 2.2,
+                  value1: weatherViewModel.forecast![0].totalprecipMm,
+                  value2: weatherViewModel.forecast![1].totalprecipMm,
                   label1: 'Сегодня',
                   label2: 'Завтра',
                 ),
@@ -1383,7 +1415,8 @@ class PrecipitationSheetContent extends StatelessWidget {
 }
 
 class HumiditySheetContent extends StatelessWidget {
-  const HumiditySheetContent({super.key});
+  final WeatherViewModel weatherViewModel;
+  HumiditySheetContent({super.key, required this.weatherViewModel});
 
   @override
   Widget build(BuildContext context) {
@@ -1413,21 +1446,22 @@ class HumiditySheetContent extends StatelessWidget {
               children: [
 
                 const SizedBox(height: 6),
-                Text('Сегодня средняя влажность составит 63%. Точка росы: от -1° до 1°.',
+                Text('Сегодня средняя влажность составит ${weatherViewModel.forecast?[0].avghumidity}%.',
                     style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 16)),
                 SizedBox(height: 15),
                 CustomLineChart(
                   points: [
-                    FlSpot(0, 5),
-                    FlSpot(3, 9),
-                    FlSpot(6, 12),
-                    FlSpot(9, 15),
-                    FlSpot(12, 17),
-                    FlSpot(15, 16),
-                    FlSpot(18, 13),
-                    FlSpot(21, 10),
+                    FlSpot(0, weatherViewModel.forecast![0].hour[0].humidity.toDouble()),
+                    FlSpot(3, weatherViewModel.forecast![0].hour[3].humidity.toDouble()),
+                    FlSpot(6, weatherViewModel.forecast![0].hour[6].humidity.toDouble()),
+                    FlSpot(9, weatherViewModel.forecast![0].hour[9].humidity.toDouble()),
+                    FlSpot(12, weatherViewModel.forecast![0].hour[12].humidity.toDouble()),
+                    FlSpot(15, weatherViewModel.forecast![0].hour[15].humidity.toDouble()),
+                    FlSpot(18, weatherViewModel.forecast![0].hour[18].humidity.toDouble()),
+                    FlSpot(21, weatherViewModel.forecast![0].hour[21].humidity.toDouble()),
+                    FlSpot(24, weatherViewModel.forecast![1].hour[0].humidity.toDouble())
                   ],
                   xUnit: 'часы',
                   yUnit: '°C',
@@ -1460,14 +1494,19 @@ class HumiditySheetContent extends StatelessWidget {
               children: [
 
                 const SizedBox(height: 6),
-                Text('Средний уровень влажности сегодня ниже, чем вчера.',
+                weatherViewModel.forecast![0].avghumidity < weatherViewModel.forecast![1].avghumidity
+                ? Text('Средний уровень влажности сегодня ниже, чем завтра.',
+                    style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16))
+                : Text('Средний уровень влажности сегодня выше, чем завтра.',
                     style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 16)),
                 const SizedBox(height: 8),
                 ComparisonBarWidget(
-                  value1: 5.4,
-                  value2: 2.2,
+                  value1: weatherViewModel.forecast![0].avghumidity,
+                  value2: weatherViewModel.forecast![1].avghumidity,
                   label1: 'Сегодня',
                   label2: 'Завтра',
                 ),
